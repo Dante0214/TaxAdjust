@@ -2,7 +2,9 @@ from datetime import date, timedelta
 from typing import List
 import holidays
 
-from app.models.tax import StockTransaction, BasketType, TransactionType
+from sqlmodel import Session, select
+from app.models.db_models import DBStockTransaction
+from app.models.tax import BasketType, TransactionType
 
 # 한국 공휴일 캘린더 (모듈 레벨에서 1회 생성, 필요한 연도 자동 확장)
 _kr_holidays = holidays.country_holidays("KR")
@@ -43,7 +45,7 @@ def _is_business_day(d: date) -> bool:
 
 
 def calc_avg_cost(
-    transactions: List[StockTransaction],
+    session: Session,
     asset_id: str,
     basket_id: str,
     up_to_date: date
@@ -51,24 +53,20 @@ def calc_avg_cost(
     """
     총평균단가 계산 로직 — 이동잔존금액법 (Running Balance)
 
-    일반적인 '총평균법' 구현에서 주의할 점:
-      단순히 모든 BUY의 합산이 아니라, 시간순으로 매수/매도를 재현하면서
-      매도 시 해당 시점의 총평균단가 × 매도수량만큼 잔존금액을 차감합니다.
-
-    예시) 1차 매수 100주@₩1,000 → 2차 매도 50주 → 3차 매수 100주@₩2,000
-      - 단순합산: (100,000 + 200,000) / 200 = ₩1,500 ← 부정확
-      - 이동잔존금액: 매도 후 잔존금액 ₩50,000 → 재매수 후 (50,000+200,000)/150 = ₩1,666.67 ← 정확
+    시간순으로 매수/매도를 재현하면서
+    매도 시 해당 시점의 총평균단가 × 매도수량만큼 잔존금액을 차감합니다.
     """
-    relevant_txs = sorted(
-        [
-            t for t in transactions
-            if t.asset_id == asset_id
-            and t.basket_id == basket_id
-            and t.trade_date <= up_to_date
-            and t.transaction_type in (TransactionType.BUY, TransactionType.SELL)
-        ],
-        key=lambda t: (t.trade_date, t.created_at)
+    stmt = (
+        select(DBStockTransaction)
+        .where(
+            DBStockTransaction.asset_id == asset_id,
+            DBStockTransaction.basket_id == basket_id,
+            DBStockTransaction.trade_date <= up_to_date,
+            DBStockTransaction.transaction_type.in_([TransactionType.BUY, TransactionType.SELL])
+        )
+        .order_by(DBStockTransaction.trade_date, DBStockTransaction.created_at)
     )
+    relevant_txs = session.exec(stmt).all()
 
     running_qty = 0.0
     running_amount = 0.0
@@ -89,18 +87,21 @@ def calc_avg_cost(
 
 
 def get_holding_quantity(
-    transactions: List[StockTransaction],
+    session: Session,
     asset_id: str,
     basket_id: str,
     up_to_date: date
 ) -> float:
     """보유수량 산출 (매수 합계 - 매도 합계)"""
-    relevant_txs = [
-        t for t in transactions
-        if t.asset_id == asset_id
-        and t.basket_id == basket_id
-        and t.trade_date <= up_to_date
-    ]
+    stmt = (
+        select(DBStockTransaction)
+        .where(
+            DBStockTransaction.asset_id == asset_id,
+            DBStockTransaction.basket_id == basket_id,
+            DBStockTransaction.trade_date <= up_to_date,
+        )
+    )
+    relevant_txs = session.exec(stmt).all()
 
     qty = 0.0
     for t in relevant_txs:

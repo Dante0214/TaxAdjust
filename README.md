@@ -226,37 +226,37 @@ Base path: `/api/tax`
 
 주식 매수/매도 및 입금(현금) 거래 내역을 기록합니다.
 
-| 컬럼                | 타입         | 제약                         | 설명                                             |
-| :------------------ | :----------- | :--------------------------- | :----------------------------------------------- | ---- | ----------- | -------------------------------------- |
-| `id`                | `TEXT`       | PK                           | 거래 고유 ID(UUID 문자열)                        |
-| `asset_id`          | `TEXT`       | INDEX, NOT NULL              | 자산(종목) 코드. 현금 입금은 `"CASH"` 사용       |
-| `basket_id`         | `TEXT`       | INDEX, NOT NULL              | 바스켓 식별자                                    |
-| `basket_type`       | `TEXT(Enum)` | NOT NULL                     | `BasketType`: `PROPRIETARY                       | FUND | SECURITIES` |
-| `transaction_type`  | `TEXT(Enum)` | NOT NULL                     | `TransactionType`: `BUY                          | SELL | EVALUATE    | DEPOSIT`(현재는 BUY/SELL/DEPOSIT 중심) |
-| `trade_date`        | `DATE`       | NOT NULL                     | 체결일                                           |
-| `settlement_date`   | `DATE`       | NOT NULL                     | 결제일(영업일 기준)                              |
-| `quantity`          | `REAL`       | NOT NULL                     | 수량(입금은 1로 고정)                            |
-| `unit_price`        | `REAL`       | NOT NULL                     | 단가(입금은 `amount`)                            |
-| `total_amount`      | `REAL`       | NOT NULL                     | 총금액(`quantity * unit_price`, 입금은 `amount`) |
-| `avg_cost_snapshot` | `REAL`       | NULL                         | 거래 시점 총평균단가(매도 기록용)                |
-| `realized_gain`     | `REAL`       | NULL                         | 실현손익(매도 시)                                |
-| `tax_reversal`      | `REAL`       | NULL                         | 유보 환입액(매도 시)                             |
-| `fiscal_year`       | `INTEGER`    | NOT NULL                     | 회계연도(거래일 연도)                            |
-| `created_by`        | `TEXT`       | NOT NULL, DEFAULT `"system"` | 생성 주체                                        |
-| `created_at`        | `DATETIME`   | NOT NULL                     | 생성일시                                         |
+| 컬럼명 | 타입 | 제약 사항 | 설명 |
+| :--- | :--- | :--- | :--- |
+| `id` | `TEXT` | PK | 거래 고유 ID (UUID 문자열) |
+| `asset_id` | `TEXT` | INDEX, NOT NULL | 자산(종목) 코드. 현금 입금은 `"CASH"` 사용 |
+| `basket_id` | `TEXT` | INDEX, NOT NULL | 바스켓 식별자 |
+| `basket_type` | `TEXT(Enum)` | NOT NULL | `BasketType`: `PROPRIETARY`, `FUND`, `SECURITIES` |
+| `transaction_type` | `TEXT(Enum)` | NOT NULL | `TransactionType`: `BUY`, `SELL`, `EVALUATE`, `DEPOSIT` |
+| `trade_date` | `DATE` | NOT NULL | 체결일 |
+| `settlement_date` | `DATE` | NOT NULL | 결제일 (영업일 기준) |
+| `quantity` | `REAL` | NOT NULL | 수량 (입금은 1로 고정) |
+| `unit_price` | `REAL` | NOT NULL | 단가 (입금은 `amount`) |
+| `total_amount` | `REAL` | NOT NULL | 총금액 (`quantity * unit_price`, 입금은 `amount`) |
+| `avg_cost_snapshot` | `REAL` | NULL | 거래 시점 총평균단가 (매도 기록용) |
+| `realized_gain` | `REAL` | NULL | 실현손익 (매도 시) |
+| `tax_reversal` | `REAL` | NULL | 유보 환입액 (매도 시) |
+| `fiscal_year` | `INTEGER` | NOT NULL | 회계연도 (거래일 연도) |
+| `created_by` | `TEXT` | NOT NULL, DEFAULT `"system"` | 생성 주체 |
+| `created_at` | `DATETIME` | NOT NULL | 생성일시 |
 
 ### 4.2. `evaluation_prices` (평가 단가 원장)
 
 평가 스케줄에 의해 입력된 종목별 평가 단가를 저장합니다.
 
 | 컬럼                     | 타입         | 제약                         | 설명                                               |
-| :----------------------- | :----------- | :--------------------------- | :------------------------------------------------- | ------- | -------------- |
+| :--- | :---| :--- | :----
 | `id`                     | `TEXT`       | PK                           | 평가 단가 고유 ID(UUID 문자열)                     |
 | `asset_id`               | `TEXT`       | INDEX, NOT NULL              | 종목 코드                                          |
 | `basket_id`              | `TEXT`       | NULL                         | 바스켓 식별자(현재 평가 입력은 바스켓 단위로 사용) |
 | `eval_date`              | `DATE`       | NOT NULL                     | 평가 기준일                                        |
 | `price`                  | `REAL`       | NOT NULL                     | 평가 단가                                          |
-| `price_source`           | `TEXT(Enum)` | NOT NULL                     | `PriceSource`: `MANUAL                             | API_KRX | API_BLOOMBERG` |
+| `price_source`           | `TEXT(Enum)` | NOT NULL                     | `PriceSource`: `MANUA, API_KRX ,API_BLOOMBERG` |
 | `evaluation_schedule_id` | `TEXT`       | NULL                         | 연결된 평가 스케줄 ID                              |
 | `input_by`               | `TEXT`       | NOT NULL, DEFAULT `"system"` | 입력 주체                                          |
 | `input_at`               | `DATETIME`   | NOT NULL                     | 입력일시                                           |
@@ -265,14 +265,14 @@ Base path: `/api/tax`
 
 평가 실행 단위를 관리합니다(확정/잠금 등 상태 포함).
 
-| 컬럼             | 타입         | 제약     | 설명                               |
-| :--------------- | :----------- | :------- | :--------------------------------- | ---------------- | --------- | ------- |
+| 컬럼             | 타입          | 제약     | 설명                               |
+| :--------------- | :----------- | :------- | :--------------------------------- | 
 | `id`             | `TEXT`       | PK       | 스케줄 ID(UUID 문자열)             |
-| `schedule_type`  | `TEXT(Enum)` | NOT NULL | `ScheduleType`: `YEARLY            | QUARTERLY        | MONTHLY   | ADHOC`  |
+| `schedule_type`  | `TEXT(Enum)` | NOT NULL | `ScheduleType`: `YEARLY, QUARTERLY, MONTHLY, ADHOC`  |
 | `eval_base_date` | `DATE`       | NOT NULL | 평가 기준일                        |
-| `asset_scope`    | `TEXT(Enum)` | NOT NULL | `AssetScope`: `ALL                 | BASKET_SPECIFIC` |
+| `asset_scope`    | `TEXT(Enum)` | NOT NULL | `AssetScope`: `ALL, BASKET_SPECIFIC` |
 | `basket_id`      | `TEXT`       | NULL     | `BASKET_SPECIFIC`일 때 대상 바스켓 |
-| `status`         | `TEXT(Enum)` | NOT NULL | `ScheduleStatus`: `PENDING         | IN_REVIEW        | CONFIRMED | LOCKED` |
+| `status`         | `TEXT(Enum)` | NOT NULL | `ScheduleStatus`: `PENDING, IN_REVIEW, CONFIRMED, LOCKED` |
 | `auto_triggered` | `BOOLEAN`    | NOT NULL | 자동 생성 여부                     |
 | `confirmed_by`   | `TEXT`       | NULL     | 확정자                             |
 | `confirmed_at`   | `DATETIME`   | NULL     | 확정일시                           |
@@ -282,9 +282,9 @@ Base path: `/api/tax`
 ### 4.4. `tax_adjustments` (세무조정 원장)
 
 평가 시점의 장부가액(book)과 세무가액(tax) 차이를 기록합니다.
-
-| 컬럼                     | 타입         | 제약            | 설명                                              |
-| :----------------------- | :----------- | :-------------- | :------------------------------------------------ | --------- |
+ 
+| 컬럼        				    | 타입         | 제약                   | 설명                                   |
+| :----------------------- | :----------- | :-------------- | :------------------------------------------------ |
 | `id`                     | `TEXT`       | PK              | 세무조정 ID(UUID 문자열)                          |
 | `asset_id`               | `TEXT`       | INDEX, NOT NULL | 종목 코드                                         |
 | `basket_id`              | `TEXT`       | INDEX, NOT NULL | 바스켓 식별자                                     |
@@ -294,7 +294,7 @@ Base path: `/api/tax`
 | `book_value`             | `REAL`       | NOT NULL        | 장부가액(평가금액)                                |
 | `tax_value`              | `REAL`       | NOT NULL        | 세무가액(취득원가)                                |
 | `book_tax_diff`          | `REAL`       | NOT NULL        | `book_value - tax_value`                          |
-| `adjustment_type`        | `TEXT(Enum)` | NOT NULL        | `AdjustmentType`: `RESERVE                        | REVERSAL` |
+| `adjustment_type`        | `TEXT(Enum)` | NOT NULL        | `AdjustmentType`: `RESERVE, REVERSAL` |
 | `realized_gain`          | `REAL`       | NULL            | 실현손익(매도 환입 기록 시 사용)                  |
 
 ### 4.5. `holdings_snapshot` (보유 스냅샷)
